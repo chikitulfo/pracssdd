@@ -1,48 +1,68 @@
 -module(zipinfo).
 -behaviour(gen_server).
 
+-export([start_link/0, get_csv/2]).
+
+% Callbacks de gen_server
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
-
--record(zip,{zipcode,
-                 place_name,
-                 state,
-                 state_code,
-                 county,
-                 latitude,
-                 longitude}).
--define(CsvHeader, "Postal Code,Place Name,State,State Abbreviation,County,Latitude,Longitude,\n").
 % Módulo encargado de dar forma y enviar el csv que contiene la información del
 % zipcode consultado.
-% Postal Code,Place Name,State,State Abbreviation,County,Latitude,Longitude,
+-record(zip,{zipcode, place_name, state, state_code, county, latitude, longitude}).
+-define(CsvHeader, "Postal Code,Place Name,State,State Abbreviation,County,Latitude,Longitude,\n").
+-define(CsvFile, "us_postal_codes.csv").
 
-init(Args) ->
-  erlang:error(not_implemented).
+% Arranca el módulo
+start_link() ->
+  gen_server:start_link(?MODULE, [], []).
 
-handle_call(Request, From, State) ->
-  erlang:error(not_implemented).
 
-handle_cast(Request, State) ->
-  erlang:error(not_implemented).
+% Llamada para obtener un csv de un zipcode
+get_csv(Server, Zipcode) ->
+  gen_server:call(Server,{getCsv,Zipcode}).
 
+
+%% Gen_server
+
+init([]) ->
+  ets:new(zipinfo, [ordered_set, named_table, {keypos, #zip.zipcode}]),
+  try leer_datos(zipinfo)
+  catch
+    throw:wrongfileformat -> {stop, "Formato incorrecto en el archivo de entrada "++?CsvFile++"."}
+  end,
+  {ok, {zipinfo}}.
+
+%Gestionar llamada de obtener csv
+handle_call({getCsv, Zipcode}, _From, {Tabla}) ->
+  {reply, build_csv(Tabla,Zipcode), {Tabla}}.
+
+%No hace nada, sólo implementa behaviour
+handle_cast(_Request, State) ->
+  {noreply, State}.
+
+%No hace nada, sólo implementa behaviour
 handle_info(Info, State) ->
-  erlang:error(not_implemented).
+  io:format("Unexpected message: ~p~n",Info),
+  {noreply, State}.
 
-terminate(Reason, State) ->
-  erlang:error(not_implemented).
+terminate(_Reason, {Tabla}) ->
+  ets:delete(Tabla).
 
-code_change(OldVsn, State, Extra) ->
-  erlang:error(not_implemented).
+%Sin uso
+code_change(_OldVsn, State, _Extra) ->
+  {ok, State}.
 
+
+%% Funciones Privadas
 
 % Lee los datos del archivo y los introduce en la tabla.
 leer_datos(Tabla) ->
-  case file:open("us_postal_codes.csv", [read,read_ahead]) of
+  case file:open(?CsvFile, [read,read_ahead]) of
     {ok, Fd} ->
       %Leer la primera linea y comprobar header
       {ok, Header} = file:read_line(Fd),
       case string:equal( Header, ?CsvHeader) of
-        false -> throw({wrongfileformat});
+        false -> throw(wrongfileformat);
         true ->
           try leer_lineas(Fd,Tabla) %Leer el archivo
           after file:close(Fd)
@@ -64,14 +84,14 @@ leer_lineas(Fd,Tabla) ->
           ZipRecord = list_to_tuple([zip|lists:sublist(Tokens,7)]),
           ets:insert(Tabla, ZipRecord),
           leer_lineas(Fd, Tabla);
-        {nomatch} -> throw({wrongfileformat})
+        {nomatch} -> throw(wrongfileformat)
       end;
     {error, Error} -> throw(Error)
   end.
 
 % Dado un zipcode y la tabla ets, produce un string de archivo csv con la línea
 % de header y una segunda línea con la información del zipcode solicitado.
-getCsv(Tabla, Zipcode) ->
+build_csv(Tabla, Zipcode) ->
   [ZipRecord] = ets:lookup(Tabla, Zipcode),
   CsvEntry = string:join( tl( tuple_to_list(ZipRecord)),",") ++ ",\n",
   ?CsvHeader++CsvEntry.
