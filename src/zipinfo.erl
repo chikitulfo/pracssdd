@@ -1,5 +1,8 @@
 -module(zipinfo).
--export([leer_datos/1]).
+-behaviour(gen_server).
+
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+
 
 -record(zip,{zipcode,
                  place_name,
@@ -12,7 +15,24 @@
 % Módulo encargado de dar forma y enviar el csv que contiene la información del
 % zipcode consultado.
 % Postal Code,Place Name,State,State Abbreviation,County,Latitude,Longitude,
-%file:open("us_postal_codes.csv", [read,read_ahead]).
+
+init(Args) ->
+  erlang:error(not_implemented).
+
+handle_call(Request, From, State) ->
+  erlang:error(not_implemented).
+
+handle_cast(Request, State) ->
+  erlang:error(not_implemented).
+
+handle_info(Info, State) ->
+  erlang:error(not_implemented).
+
+terminate(Reason, State) ->
+  erlang:error(not_implemented).
+
+code_change(OldVsn, State, Extra) ->
+  erlang:error(not_implemented).
 
 
 % Lee los datos del archivo y los introduce en la tabla.
@@ -33,7 +53,7 @@ leer_datos(Tabla) ->
   end.
 
 
-%Función auxiliar de leer_datos, encargada de leer cada línea e introducirla en la tabla.
+% Función auxiliar de leer_datos, encargada de leer cada línea e introducirla en la tabla.
 leer_lineas(Fd,Tabla) ->
   case file:read_line(Fd) of
     eof  -> {leido};
@@ -48,6 +68,14 @@ leer_lineas(Fd,Tabla) ->
       end;
     {error, Error} -> throw(Error)
   end.
+
+% Dado un zipcode y la tabla ets, produce un string de archivo csv con la línea
+% de header y una segunda línea con la información del zipcode solicitado.
+getCsv(Tabla, Zipcode) ->
+  [ZipRecord] = ets:lookup(Tabla, Zipcode),
+  CsvEntry = string:join( tl( tuple_to_list(ZipRecord)),",") ++ ",\n",
+  ?CsvHeader++CsvEntry.
+
 
 % ets:new(zipinfo, [ordered_set, named_table, {keypos, #zip.zipcode}]).
 
