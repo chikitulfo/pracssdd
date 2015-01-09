@@ -36,7 +36,7 @@ init([]) ->
 
 %Gestionar llamada de obtener csv
 handle_call({getCsv, Zipcode}, _From, {Tabla}) ->
-  {reply, build_csv(Tabla,Zipcode), {Tabla}}.
+  {reply, build_csv(Tabla,Zipcode), {Tabla}};
 %Parada
 handle_call(salir, _From, State) ->
   {stop, normal, ok, State}.
