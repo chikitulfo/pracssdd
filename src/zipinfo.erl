@@ -1,7 +1,7 @@
 -module(zipinfo).
 -behaviour(gen_server).
 
--export([start_link/0, get_csv/2]).
+-export([start_link/0, get_csv/2,stop/1]).
 
 % Callbacks de gen_server
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -21,6 +21,8 @@ start_link() ->
 get_csv(Server, Zipcode) ->
   gen_server:call(Server,{getCsv,Zipcode}).
 
+stop(Server) ->
+  gen_server:call(Server, salir).
 
 %% Gen_server
 
@@ -35,6 +37,9 @@ init([]) ->
 %Gestionar llamada de obtener csv
 handle_call({getCsv, Zipcode}, _From, {Tabla}) ->
   {reply, build_csv(Tabla,Zipcode), {Tabla}}.
+%Parada
+handle_call(salir, _From, State) ->
+  {stop, normal, ok, State}.
 
 %No hace nada, sólo implementa behaviour
 handle_cast(_Request, State) ->
