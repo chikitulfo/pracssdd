@@ -1,2 +1,0 @@
-%Compilar todo en src
-{'src/zip_server', [report, {i, "./include"}, {outdir, "./ebin"}, debug_info]}.
