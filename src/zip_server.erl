@@ -10,7 +10,7 @@
 % zipcode consultado.
 -record(zip,{zipcode, place_name, state, state_code, county, latitude, longitude}).
 -define(CsvHeader, "Postal Code,Place Name,State,State Abbreviation,County,Latitude,Longitude,\n").
--define(CsvFile, "us_postal_codes.csv").
+-define(CsvFile, "data/us_postal_codes.csv").
 
 % Arranca el módulo
 start() ->
