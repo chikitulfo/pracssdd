@@ -94,13 +94,16 @@ leer_lineas(Fd,Tabla) ->
     {error, Error} -> throw(Error)
   end.
 
-% Dado un zipcode y la tabla ets, produce un string de archivo csv con la línea
+% Dado un zipcode y la tabla ets, produce una tupla {ok, string} de archivo csv con la línea
 % de header y una segunda línea con la información del zipcode solicitado.
+% En caso de no encontrar el zipcode introducido, devuelve {error, notfound}
 build_csv(Tabla, Zipcode) ->
-  [ZipRecord] = ets:lookup(Tabla, Zipcode),
-  CsvEntry = string:join( tl( tuple_to_list(ZipRecord)),",") ++ ",\n",
-  ?CsvHeader++CsvEntry.
-
+  case ets:lookup(Tabla, Zipcode) of
+    [ZipRecord] ->
+      CsvEntry = string:join( tl( tuple_to_list(ZipRecord)),",") ++ ",\n",
+      {ok, ?CsvHeader++CsvEntry};
+    [] -> {error, notfound}
+  end.
 
 % ets:new(zipinfo, [ordered_set, named_table, {keypos, #zip.zipcode}]).
 
