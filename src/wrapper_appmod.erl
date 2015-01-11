@@ -16,12 +16,12 @@ handle_request("zip", Arg) ->
     true ->   %Si pathinfo está definido
       case string:tokens(Arg#arg.pathinfo,"/") of
         [Zipcode] -> % Y tiene solo un elemento tras /zip/
-          case zip_server:get_csv(zip_server,Zipcode) of
+          case zip_server:get_csv(Zipcode) of
             {ok, Csv} ->
               {content, "text/csv", Csv};
             _ ->
               [{status, 404}, {html, io_lib:format(
-                "<h1>Codigo Postal ~s no encontrado</h1><br>",
+                "<h1>Codigo Postal ~s no encontrado</h1>",
                 [Zipcode])}]
           end;
         _ ->
@@ -37,12 +37,12 @@ wrong_request(Number, Arg) ->
   case Number of
     404 ->
       Error = '404 No Encontrado',
-      Html = io_lib:format("<h1> Error ~s</h1><br>"
-        "URL ~s no encontrada",
+      Html = io_lib:format("<h1> Error ~s</h1>~n"
+        "<br>URL ~s no encontrada",
         [Error, Arg#arg.server_path]);
     _ ->
-      Html = io_lib:format("<h1> Error ~p</h1><br>"
-        "Al acceder a ~s",
+      Html = io_lib:format("<h1> Error ~p</h1>~n"
+        "<br>Al acceder a ~s",
         [Number, Arg#arg.server_path ])
   end,
   [{status, Number},{html, Html}].

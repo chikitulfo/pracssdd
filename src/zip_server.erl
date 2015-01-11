@@ -1,7 +1,8 @@
 -module(zip_server).
 -behaviour(gen_server).
 
--export([start/0, get_csv/2,stop/1]).
+% Interfaz de uso
+-export([start/0, get_csv/1,stop/0]).
 
 % Callbacks de gen_server
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -18,11 +19,11 @@ start() ->
 
 
 % Llamada para obtener un csv de un zipcode
-get_csv(Server, Zipcode) ->
-  gen_server:call(Server,{getCsv,Zipcode}).
+get_csv(Zipcode) ->
+  gen_server:call(?MODULE,{getCsv,Zipcode}).
 
-stop(Server) ->
-  gen_server:call(Server, salir).
+stop() ->
+  gen_server:call(?MODULE, salir).
 
 %% Gen_server
 
