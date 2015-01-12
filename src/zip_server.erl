@@ -106,10 +106,3 @@ build_csv(Tabla, Zipcode) ->
     [] -> {error, notfound}
   end.
 
-% ets:new(zipinfo, [ordered_set, named_table, {keypos, #zip.zipcode}]).
-
-% Encontrar elementos e imprimir su zipcode
-% ets:match(zipinfo, #zip{zipcode='$1',place_name="Portsmouth",state_code="NH",_='_'})
-
-% Devolver un elemento en particular, con su zipcode.
-%ets:lookup(zipinfo, "00212")

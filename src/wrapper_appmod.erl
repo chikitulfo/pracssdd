@@ -11,6 +11,7 @@ out(Arg) ->
   Server_Path =  string:tokens(Arg#arg.server_path, "/"),
   handle_request(string:to_lower(hd(Server_Path)), Arg).
 
+% Petición a /zip/
 handle_request("zip", Arg) ->
   case is_list(Arg#arg.pathinfo) of
     true ->   %Si pathinfo está definido
@@ -33,6 +34,7 @@ handle_request("zip", Arg) ->
 handle_request(_, Arg) ->
   wrong_request(404, Arg).
 
+% Petición no válida
 wrong_request(Number, Arg) ->
   case Number of
     404 ->
