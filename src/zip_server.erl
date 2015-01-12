@@ -9,7 +9,7 @@
 
 % Módulo encargado de dar forma y enviar el csv que contiene la información del
 % zipcode consultado.
--record(zip,{zipcode, place_name, state, state_code, county, latitude, longitude}).
+-record(zip,{postalcode, placename, state, stateabbreviation, county, latitude, longitude}).
 -define(CsvHeader, "Postal Code,Place Name,State,State Abbreviation,County,Latitude,Longitude,\n").
 -define(CsvFile, "data/us_postal_codes.csv").
 
@@ -28,7 +28,7 @@ stop() ->
 %% Gen_server
 
 init([]) ->
-  ets:new(zipinfo, [ordered_set, named_table, {keypos, #zip.zipcode}]),
+  ets:new(zipinfo, [ordered_set, named_table, {keypos, #zip.postalcode}]),
   try leer_datos(zipinfo)
   catch
     throw:wrongfileformat -> {stop, "Formato incorrecto en el archivo de entrada "++?CsvFile++"."}
