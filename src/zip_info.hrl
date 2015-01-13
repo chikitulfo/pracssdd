@@ -7,4 +7,5 @@
 -define(CsvHeader, "Postal Code,Place Name,State,State Abbreviation,County,Latitude,Longitude,\n").
 -define(CsvFile, "data/us_postal_codes.csv").
 -define(ZIPSERVER, zipserver).
+-define(QUERYHANDLER, queryhandler).
 -define(QUERYSOLVER, querysolver).
