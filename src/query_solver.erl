@@ -60,7 +60,7 @@ terminate(_Reason, {Tabla}) ->
 code_change(_OldVsn, State, _Extra) ->
   {ok, State}.
 
-% Encuentra el zipcode asociado a una
+% Encuentra la lista de zipcodes de una búsqueda
 findzips(Field, Value) ->
   Zip = #zip{postalcode = '$1',_='_'},
   ets:match(zipinfo, set_field(Field, Value, Zip)).
