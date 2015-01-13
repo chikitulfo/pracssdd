@@ -7,16 +7,13 @@
 
 %%%%%%%%%%%%%
 %% TESTING %%
--export([findzips/2]).
+-compile(export_all).
 %%%%%%%%%%%%%
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 -define(SERVER, ?QUERYSOLVER).
--define(ZIPTABLE, zipinfo).
-
--record(state, {}).
 
 %%%===================================================================
 %%% API
@@ -26,10 +23,9 @@
 start() ->
   gen_server:start_link({local,?SERVER},?MODULE, [], []).
 
-
-% Llamada para obtener un csv de un zipcode
-get_csv(Zipcode) ->
-  gen_server:call(?SERVER,{getCsv,Zipcode}).
+% Llamada para realizar el cálculo de qué zips obtienen ese resultado.
+solve_query(Field, Value, QueryId) ->
+  gen_server:cast(?SERVER,{solve_query,{Field,Value,QueryId}}).
 
 stop() ->
   gen_server:call(?SERVER, salir).
@@ -69,7 +65,7 @@ findzips(Field, Value) ->
 set_field(Field, Value, Record) ->
   setelement(field_num(Field), Record, Value).
 
-% Conocer la posición que corresponde a Field en la tupla subyacente
+% Conocer la posición que corresponde a un campo en la tupla subyacente
 field_num(Field) ->
   Fields = record_info(fields, zip),
   DifField = fun (FieldName) -> Field /= FieldName end,

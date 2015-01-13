@@ -24,9 +24,8 @@ start() ->
   gen_server:start_link({local,?SERVER},?MODULE, [], []).
 
 
-% Llamada para obtener un csv de un zipcode
-get_csv(Zipcode) ->
-  gen_server:call(?SERVER,{getCsv,Zipcode}).
+solve_query(Field,Value) ->
+  gen_server:call(?SERVER,{solve,Field,Value}).
 
 stop() ->
   gen_server:call(?SERVER, salir).
@@ -37,6 +36,9 @@ init([]) ->
   ets:new(querytable, [ordered_set, named_table, {keypos, 1}]),
   {ok, {}}.
 
+%Resolver query
+handle_call({solve,Field,Value}, _From, State) ->
+  {reply, handle_query(Field,Value), State};
 %Parada
 handle_call(salir, _From, State) ->
   {stop, normal, ok, State}.
@@ -56,3 +58,27 @@ terminate(_Reason, {Tabla}) ->
 %Sin uso
 code_change(_OldVsn, State, _Extra) ->
   {ok, State}.
+
+
+%% Funciones privadas
+
+%% Función principal para gestionar una query y reenviarla a query_solver
+handle_query(Field,Value) ->
+  % Se comprueba que el campo existe en el record zip
+  AtomField = field_to_atom(Field),
+  case lists:any( fun(X) -> X == AtomField end, record_info(fields,zip)) of
+    true ->
+      % Calculamos el número donde se recogerá la petición. Se utiliza un hash
+      % para favorecer la reutilización.
+      QueryNum = erlang:phash2(Field++Value),
+      query_solver:solve_query(Field,Value,QueryNum),
+      {ok, QueryNum};
+    false ->
+      {error, badfield}
+  end.
+
+% Pasa el campo de string a atom
+field_to_atom(Field) ->
+  list_to_atom(string:to_lower(re:replace(Field, " ", "", [{return,list}]))).
+
+

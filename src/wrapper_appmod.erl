@@ -45,9 +45,9 @@ handle_request("query", Arg) ->
           [{K1,V1},{K2,V2}] = ParsedQuery,
           case [{string:to_lower(K1),V1},{string:to_lower(K2),V2}] of
             [{"field",V1},{"value",V2}] ->
-              Tupla = {V1,V2}; %TODO Llamada a queryHandler
+              send_query(V1,V2);
             [{"value",V1},{"field",V2}] ->
-              Tupla = {V2,V1}; %TODO Llamada a queryHandler
+              send_query(V2,V1);
             _Otherwise ->
               wrong_request(400, Arg)
            end
@@ -57,6 +57,14 @@ handle_request("query", Arg) ->
   end;
 handle_request(_, Arg) ->
   wrong_request(404, Arg).
+
+send_query(Field, Value) ->
+  case query_handler:solve_query(Field,Value) of
+    {ok, ResulURL} ->
+      ok; %TODO RESPONDER
+    {error, badfield} ->
+      wrong_request(418, a)
+  end.
 
 % Petición no válida
 wrong_request(Number, Arg) ->
