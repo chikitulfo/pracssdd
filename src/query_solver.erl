@@ -63,12 +63,16 @@ code_change(_OldVsn, State, _Extra) ->
 %% Funciones privadas
 
 solve(Field,Value,QueryId) ->
-  %Se introduce en la tabla de resultados una tupla que indica que aún no está resuelto
-  ets:insert(?TABLA,{QueryId,Field,Value,unsolved}),
-  %Operación costosa, simulamos con una espera
-  Resul = findzips(Field,Value),
-  timer:sleep(5000),
-  ets:insert(?TABLA,{QueryId,Field,Value,Resul}).
+  case ets:lookup(?TABLA,QueryId) of
+    [] -> %No se encuentra en la tabla, hay que  insertarlo
+      %Se introduce en la tabla de resultados una tupla que indica que aún no está resuelto
+      ets:insert(?TABLA,{QueryId,Field,Value,unsolved}),
+      %Operación costosa, simulamos con una espera
+      Resul = findzips(Field,Value),
+      timer:sleep(5000),
+      ets:insert(?TABLA,{QueryId,Field,Value,Resul});
+    [_Tupla] -> ok %Se encuentra en la tabla, nada que hacer
+  end.
 
 % Encuentra la lista de zipcodes de una búsqueda
 findzips(Field, Value) ->
