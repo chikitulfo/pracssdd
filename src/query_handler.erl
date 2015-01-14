@@ -14,6 +14,7 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 -define(SERVER, ?QUERYHANDLER).
+-define(TABLA, querytable).
 
 %%%===================================================================
 %%% API
@@ -23,6 +24,8 @@
 start() ->
   gen_server:start_link({local,?SERVER},?MODULE, [], []).
 
+get_result(QueryId) ->
+  gen_server:call(?SERVER,{result,QueryId}).
 
 solve_query(Field,Value) ->
   gen_server:call(?SERVER,{solve,Field,Value}).
@@ -38,6 +41,9 @@ init([]) ->
 %Resolver query
 handle_call({solve,Field,Value}, _From, State) ->
   {reply, handle_query(Field,Value), State};
+%Proporcionar resultados
+handle_call({result,QueryId}, _From, State) ->
+  {reply, result(QueryId), State};
 %Parada
 handle_call(salir, _From, State) ->
   {stop, normal, ok, State}.
@@ -74,6 +80,16 @@ handle_query(Field,Value) ->
       {ok, QueryNum};
     false ->
       {error, badfield}
+  end.
+
+result(QueryId) ->
+  case ets:lookup(?TABLA,QueryId) of
+    [{QueryId, _Field, _Value, ResultList}] when is_list(ResultList) ->
+      {ok, ResultList};
+    [{QueryId, _Field, _Value, unsolved}] ->
+      {error, notready};
+    [] ->
+      {error, invalidID}
   end.
 
 % Pasa el campo de string a atom

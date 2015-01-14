@@ -37,6 +37,7 @@ init([]) ->
   ets:new(?TABLA, [ordered_set, named_table, {keypos, 1}]),
   {ok, {}}.
 
+
 %Parada
 handle_call(salir, _From, State) ->
   {stop, normal, ok, State}.
@@ -66,10 +67,8 @@ solve(Field,Value,QueryId) ->
   ets:insert(?TABLA,{QueryId,Field,Value,unsolved}),
   %Operación costosa, simulamos con una espera
   Resul = findzips(Field,Value),
-  %timer:sleep(5000),
+  timer:sleep(5000),
   ets:insert(?TABLA,{QueryId,Field,Value,Resul}).
-
-
 
 % Encuentra la lista de zipcodes de una búsqueda
 findzips(Field, Value) ->

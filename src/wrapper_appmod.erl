@@ -33,8 +33,7 @@ handle_request("zip", Arg) ->
   end;
 % Petición a /query
 handle_request("query", Arg) ->
-  case Arg#arg.pathinfo == undefined
-    andalso is_list(Arg#arg.querydata) of
+  case Arg#arg.pathinfo == undefined andalso is_list(Arg#arg.querydata) of
     true -> %query es válido
       ParsedQuery = try yaws_api:parse_query(Arg)
                     catch error:badarg -> [] end,
@@ -46,7 +45,7 @@ handle_request("query", Arg) ->
             {ok, ResponseURL} ->
               [{status, 202}, {html,
                 "<h1>Accepted Query</h1>\n"
-                "<a href=\"/resul/"++integer_to_list(ResponseURL)++"\">"
+                "<a href=\"/result/"++integer_to_list(ResponseURL)++"\">"
                   "The result can be found here.</a>\n"
               }];
             {error, _Error} ->
@@ -54,7 +53,34 @@ handle_request("query", Arg) ->
           end
       end;
     false ->
-      wrong_request(418, Arg)
+      wrong_request(404, Arg)
+  end;
+% Petición a /result
+handle_request("result", Arg) ->
+  case is_list(Arg#arg.pathinfo) andalso  Arg#arg.querydata == undefined of
+    true ->
+      case string:to_integer(string:sub_string(Arg#arg.pathinfo, 2)) of
+        {error, _Reason} -> %El primer elemento no era un número
+          wrong_request(404,Arg);
+        {QueryId, []} ->
+          case query_handler:get_result(QueryId) of
+            {ok, []} ->
+              {html, "<h1>No results found</h1>\n" };
+            {ok, ResultList} ->
+              {html, lists:foldl(
+                fun(X,Acc) -> Acc++"<a href=/zip/"++X++">"++X++"</a><br>\n" end,
+                [], ResultList)
+              };
+            {error, notready} ->
+              {status,204};
+            {error, invalidID} ->
+              wrong_request(404,Arg)
+          end;
+        {_Num, [_H|_T]} -> %No había solo un número en pathinfo
+          wrong_request(404,Arg)
+      end;
+    false ->
+      wrong_request(418,Arg)
   end;
 handle_request(_, Arg) ->
   wrong_request(404, Arg).
@@ -94,7 +120,7 @@ wrong_request(Number, Arg) ->
         "<br>URL ~s no encontrada",
         [Error, Arg#arg.server_path]);
     _ ->
-      Html = io_lib:format("<h1> Error ~p ~p</h1>~n"
+      Html = io_lib:format("<h1> Error ~s ~p</h1>~n"
         "<br>Al acceder a ~s",
         [Number, yaws_api:code_to_phrase(Number), Arg#arg.server_path ])
   end,
