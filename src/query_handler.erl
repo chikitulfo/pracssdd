@@ -36,6 +36,7 @@ stop() ->
 %% Gen_server
 
 init([]) ->
+  ets:new(?TABLA, [ordered_set, named_table, protected, {keypos, 1}]),
   {ok, {}}.
 
 %Resolver query
@@ -52,7 +53,11 @@ handle_call(salir, _From, State) ->
 handle_cast(_Request, State) ->
   {noreply, State}.
 
-%No hace nada, sólo implementa behaviour
+%Recibido resultado de un worker
+handle_info({query_solver,solved,{QueryId,Field,Value,Resul}}, State) ->
+  ets:insert(?TABLA,{QueryId,Field,Value,Resul}),
+  {noreply, State};
+% Default response
 handle_info(Info, State) ->
   io:format("Unexpected message: ~p~n",Info),
   {noreply, State}.
@@ -76,7 +81,14 @@ handle_query(Field,Value) ->
       % Calculamos el número donde se recogerá la petición. Se utiliza un hash
       % para favorecer la reutilización.
       QueryNum = erlang:phash2(atom_to_list(AtomField)++Value),
-      query_solver:solve_query(AtomField,Value,QueryNum),
+      case ets:lookup(?TABLA,QueryNum) of
+        [] -> %No se encuentra en la tabla, hay que  insertarlo
+          %Se introduce en la tabla de resultados una tupla que indica que aún no está resuelto
+          ets:insert(?TABLA,{QueryNum,AtomField,Value,unsolved}),
+          query_solver:resuelve(QueryNum,AtomField,Value);
+          %ets:insert(?TABLA,{QueryNum,AtomField,Value,Resul});
+        [_Tupla] -> ok %Se encuentra en la tabla, nada que hacer
+      end,
       {ok, QueryNum};
     false ->
       {error, badfield}
