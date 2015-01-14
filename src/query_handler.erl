@@ -3,11 +3,11 @@
 
 -include("zip_info.hrl").
 %% API
--export([start/0, stop/0]).
+-export([start/0, stop/0, get_result/1, solve_query/2]).
 
 %%%%%%%%%%%%%
 %% TESTING %%
--compile(export_all).
+%-compile(export_all).
 %%%%%%%%%%%%%
 
 %% gen_server callbacks
