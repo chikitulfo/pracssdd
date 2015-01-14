@@ -1,83 +1,36 @@
 -module(query_solver).
--behaviour(gen_server).
 
 -include("zip_info.hrl").
 %% API
--export([start/0, stop/0]).
+-export([resuelve/3]).
 
 %%%%%%%%%%%%%
 %% TESTING %%
--compile(export_all).
+%-compile(export_all).
 %%%%%%%%%%%%%
 
-%% gen_server callbacks
--export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+-define(TABLA, zipinfo).
 
--define(SERVER, ?QUERYSOLVER).
--define(TABLA, querytable).
+%% API
 
-%%%===================================================================
-%%% API
-%%%===================================================================
-
-% Arranca el módulo
-start() ->
-  gen_server:start_link({local,?SERVER},?MODULE, [], []).
-
-% Llamada para realizar el cálculo de qué zips obtienen ese resultado.
-solve_query(Field, Value, QueryId) ->
-  gen_server:cast(?SERVER,{solve_query,{Field,Value,QueryId}}).
-
-stop() ->
-  gen_server:call(?SERVER, salir).
-
-%% Gen_server
-
-init([]) ->
-  ets:new(?TABLA, [ordered_set, named_table, {keypos, 1}]),
-  {ok, {}}.
-
-
-%Parada
-handle_call(salir, _From, State) ->
-  {stop, normal, ok, State}.
-
-%Recibida solicitud de resolver
-handle_cast({solve_query,{Field,Value,QueryId}}, State) ->
-  solve(Field,Value,QueryId),
-  {noreply, State}.
-
-%No hace nada, sólo implementa behaviour
-handle_info(Info, State) ->
-  io:format("Unexpected message: ~p~n",Info),
-  {noreply, State}.
-
-terminate(_Reason, _State) ->
-  ets:delete(?TABLA).
-
-%Sin uso
-code_change(_OldVsn, State, _Extra) ->
-  {ok, State}.
-
+resuelve(QueryId,Field,Value) ->
+  From = self(),
+  spawn_link(fun() -> resolver(From,{QueryId,Field,Value}) end).
+  %spawn_link(?MODULE, resolver, [self(),{QueryId,Field,Value}]).
 
 %% Funciones privadas
 
-solve(Field,Value,QueryId) ->
-  case ets:lookup(?TABLA,QueryId) of
-    [] -> %No se encuentra en la tabla, hay que  insertarlo
-      %Se introduce en la tabla de resultados una tupla que indica que aún no está resuelto
-      ets:insert(?TABLA,{QueryId,Field,Value,unsolved}),
-      %Operación costosa, simulamos con una espera
-      Resul = findzips(Field,Value),
-      timer:sleep(5000),
-      ets:insert(?TABLA,{QueryId,Field,Value,Resul});
-    [_Tupla] -> ok %Se encuentra en la tabla, nada que hacer
-  end.
+resolver(From,{QueryId,Field,Value}) ->
+  Resul = findzips(Field,Value),
+  %Simulamos la operación costosa con 10s de espera
+  timer:sleep(10000),
+  From ! {query_solver,solved,{QueryId,Field,Value,Resul}},
+  ok.
 
 % Encuentra la lista de zipcodes de una búsqueda
 findzips(Field, Value) ->
   Zip = #zip{postalcode = '$1',_='_'},
-  lists:append( ets:match(zipinfo, set_field(Field, Value, Zip))).
+  lists:append( ets:match(?TABLA, set_field(Field, Value, Zip))).
 
 % Función para modificar el Valor de un Campo en un Record
 set_field(Field, Value, Record) ->
