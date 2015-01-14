@@ -41,29 +41,43 @@ handle_request("query", Arg) ->
       case length(ParsedQuery) of
         Num when Num /= 2 -> %Query debe tener dos tuplas
           wrong_request(400, Arg);
-        2 -> %ParsedQuery tiene dos tuplas {K,V}, se comprueba que sean "field" y "value"
-          [{K1,V1},{K2,V2}] = ParsedQuery,
-          case [{string:to_lower(K1),V1},{string:to_lower(K2),V2}] of
-            [{"field",V1},{"value",V2}] ->
-              send_query(V1,V2);
-            [{"value",V1},{"field",V2}] ->
-              send_query(V2,V1);
-            _Otherwise ->
+        2 ->
+          case send_query(ParsedQuery) of
+            {ok, ResponseURL} ->
+              [{status, 202}, {html,
+                "<h1>Accepted Query</h1>\n"
+                "<a href=\"/resul/"++integer_to_list(ResponseURL)++"\">"
+                  "The result can be found here.</a>\n"
+              }];
+            {error, _Error} ->
               wrong_request(400, Arg)
-           end
+          end
       end;
     false ->
-      wrong_request(404, Arg)
+      wrong_request(418, Arg)
   end;
 handle_request(_, Arg) ->
   wrong_request(404, Arg).
 
-send_query(Field, Value) ->
-  case query_handler:solve_query(Field,Value) of
-    {ok, ResulURL} ->
-      ok; %TODO RESPONDER
-    {error, badfield} ->
-      wrong_request(418, a)
+% Se envía la tupla a query_handler
+send_query(ParsedQuery) ->
+  case sort_query_tuple(ParsedQuery) of
+    {error, Error} ->
+      {error, Error};
+    {Field, Value} ->
+      query_handler:solve_query(Field,Value)
+  end.
+
+% ParsedQuery tiene dos tuplas {K,V}, se comprueba que sean "field" y "value"
+% y se ordenan devolviendo sus valores en una sola tupla {Field,Value}
+sort_query_tuple([{K1,V1},{K2,V2}]) ->
+  case [{string:to_lower(K1),V1},{string:to_lower(K2),V2}] of
+    [{"field",V1},{"value",V2}] ->
+      {V1,V2};
+    [{"value",V1},{"field",V2}] ->
+      {V2,V1};
+    _Otherwise ->
+      {error, badarg}
   end.
 
 % Petición no válida
@@ -72,10 +86,10 @@ wrong_request(Number, Arg) ->
     400 ->
       Error = "400 Bad Request",
       Html = io_lib:format("<h1> Error ~s</h1>~n"
-      "<br>El recurso ~s no admite esa sintaxis ~s",
+        "<br>El recurso ~s no admite esa sintaxis ~s",
         [Error, Arg#arg.server_path, Arg#arg.querydata]);
     404 ->
-      Error = "404 No Encontrado",
+      Error = "404 Not Found",
       Html = io_lib:format("<h1> Error ~s</h1>~n"
         "<br>URL ~s no encontrada",
         [Error, Arg#arg.server_path]);
