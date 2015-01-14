@@ -33,7 +33,6 @@ stop() ->
 %% Gen_server
 
 init([]) ->
-  ets:new(querytable, [ordered_set, named_table, {keypos, 1}]),
   {ok, {}}.
 
 %Resolver query
@@ -52,8 +51,8 @@ handle_info(Info, State) ->
   io:format("Unexpected message: ~p~n",Info),
   {noreply, State}.
 
-terminate(_Reason, {Tabla}) ->
-  ets:delete(Tabla).
+terminate(_Reason, _State) ->
+  ok.
 
 %Sin uso
 code_change(_OldVsn, State, _Extra) ->
@@ -70,8 +69,8 @@ handle_query(Field,Value) ->
     true ->
       % Calculamos el número donde se recogerá la petición. Se utiliza un hash
       % para favorecer la reutilización.
-      QueryNum = erlang:phash2(Field++Value),
-      query_solver:solve_query(Field,Value,QueryNum),
+      QueryNum = erlang:phash2(atom_to_list(AtomField)++Value),
+      query_solver:solve_query(AtomField,Value,QueryNum),
       {ok, QueryNum};
     false ->
       {error, badfield}
