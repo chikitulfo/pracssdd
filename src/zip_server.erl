@@ -1,7 +1,9 @@
 -module(zip_server).
 -behaviour(gen_server).
 
-% Interfaz de uso
+-include("zip_info.hrl").
+
+% API
 -export([start/0, get_csv/1,stop/0]).
 
 % Callbacks de gen_server
@@ -9,9 +11,7 @@
 
 % Módulo encargado de dar forma y enviar el csv que contiene la información del
 % zipcode consultado.
--record(zip,{postalcode, placename, state, stateabbreviation, county, latitude, longitude}).
--define(CsvHeader, "Postal Code,Place Name,State,State Abbreviation,County,Latitude,Longitude,\n").
--define(CsvFile, "data/us_postal_codes.csv").
+
 
 % Arranca el módulo
 start() ->
