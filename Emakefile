@@ -1,3 +1,3 @@
 % EMakefile
 % -*- mode: erlang -*-
-{'src/*', [report, {i, "./include"}, {outdir, "./ebin"}, debug_info]}.
+{"src/*", [report, {outdir, "./ebin"}, debug_info]}.
