@@ -120,7 +120,7 @@ wrong_request(Number, Arg) ->
         "<br>URL ~s no encontrada",
         [Error, Arg#arg.server_path]);
     _ ->
-      Html = io_lib:format("<h1> Error ~s ~p</h1>~n"
+      Html = io_lib:format("<h1> Error ~p ~s</h1>~n"
         "<br>Al acceder a ~s",
         [Number, yaws_api:code_to_phrase(Number), Arg#arg.server_path ])
   end,

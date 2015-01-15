@@ -4,9 +4,6 @@ compile:
 start: compile
 	yaws --conf yaws.conf 
 
-daemon: compile
-	yaws -D --conf yaws.conf 
-
 test: ctest
 	erl -noshell -eval 'eunit:test([{dir, "ebin"}], [verbose])' -s init stop
 

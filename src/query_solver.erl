@@ -23,7 +23,7 @@ resuelve(QueryId,Field,Value) ->
 resolver(From,{QueryId,Field,Value}) ->
   Resul = findzips(Field,Value),
   %Simulamos la operación costosa con 10s de espera
-  timer:sleep(10000),
+  timer:sleep(9000),
   From ! {query_solver,solved,{QueryId,Field,Value,Resul}},
   ok.
 
