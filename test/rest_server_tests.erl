@@ -10,6 +10,14 @@ badreq_test_() ->
     " recursos",
     {setup, fun start/0, fun stop/1, fun badreq/1}}.
 
+zip_test_() ->
+  {"Responde a peticiones de zip, tanto adecuadas como erróneas",
+    {setup, fun start/0, fun stop/1, fun zipreq/1}}.
+
+queries_test_() ->
+  {"Peticiones de query, sin comprobar resultados",
+    {setup, fun start/0, fun stop/1, fun queryreq/1}}.
+
 badreq(_) ->
   {inparallel,[
     %Ruta fuera de appmod
@@ -20,6 +28,35 @@ badreq(_) ->
     {"/result",matchcode(418,"/result")}
   ]}.
 
+zipreq(_) ->
+  {inparallel,[
+    %Zip correcto,
+    {"46176 (devuelve csv)", fun() -> ?_assertMatch({ok,{{_,200,_},
+      [{"date",_},
+        {"server","Yaws 1.98"},
+        {"content-length",_},
+        {"content-type","text/csv"}],_Contenido}},
+      httpreq("/zip/46176")) end},
+    %Rutas de error
+    {"00288 (404)",matchcode(404,"/zip/00288")},
+    {"hola (404)",matchcode(404,"/zip/hola")},
+    {"46176/23 (404)",matchcode(404,"/zip/46176/23")}
+  ]}.
+
+queryreq(_) ->
+  {inparallel,[
+    %Queries mal formadas
+    {"Caracteres raros", matchcode(400,"/query?ads+as-/()&$S%ef")},
+    {"No field ni value", matchcode(400,"/query?hola=lala&adios=charmander")},
+    {"Field y value inexistente", matchcode(400,"/query?field=&value=")},
+    {"Field no válido", matchcode(400,"/query?field=inventado&value=daigual")},
+    %Queries adecuadas
+    {"Field&Value válidos", matchcode(202,"/query?field=State&value=charmander")},
+    {"Value&Field válidos (orden inverso)", matchcode(202,"/query?value=charmander&field=State")},
+    %Mayúsculas y minúsculas da igual
+    {"Value&Field válidos (independiente de mayusculas)", matchcode(202,"/query?vAlUe=charmander&FIelD=State")}
+    ]}.
+
 %necesario arrancar yaws y el servicio de peticiones
 start() ->
   inets:start(),
@@ -28,8 +65,8 @@ start() ->
 
 %paramos yaws e inets tras los tests
 stop(_SetupData) ->
-  os:cmd("yaws --id test --stop"),
-  inets:stop().
+  os:cmd("yaws --id test --stop").
+  %inets:stop().
 
 % Sólo queremos comprobar status code, contenido y headers irrelevantes
 matchcode(StatusCode, Ruta) ->
