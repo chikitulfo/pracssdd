@@ -26,6 +26,7 @@ queries_test_() ->
   {"Peticiones de query, sin comprobar resultados",
     queryreq()}.
 
+% Test que muestra el sistema en funcionamiento
 demostracion_test_()->
   ?debugFmt("~nPasamos ahora a una demostración de funcionamiento completo.~n"
     "Se hace una petición al servicio para códigos postales cuyo nombre~n"
@@ -55,6 +56,18 @@ demostracion_test_()->
   {ok,{{_,StatusCodeZ,StatusMsgZ},_,ContenidoZ}} = httpreq(ZipUrl),
   ?debugFmt("~nSolicitud: ~p~n"
   "Respuesta: ~p ~s~n~s~n",[ZipUrl,StatusCodeZ,StatusMsgZ, ContenidoZ]),
+  timer:sleep(200),
+  %Comprobamos ahora que una petición idéntica no necesita trabajar de nuevo
+  ?debugFmt("~nRepetimos la query inicial, para comprobar que~n"
+    "esta vez el resultado está disponible de inmediato:~n"
+    "~p~n",[Query]),
+  {ok,{{_, StatusCodeQ2, StatusMsgQ2},_, ContenidoQ2}} = httpreq(Query),
+  Result2 = grep(ContenidoQ2,"(?<=<a href=)/result/[0-9]+(?=>)"),
+
+  ?debugFmt("~nPreguntamos por el resultado ~p",[Result2]),
+  {ok,{{_,StatusCodeR3,StatusMsgR3},_,ContenidoR3}} = httpreq(Result2),
+  ?debugFmt("~nSolicitud: ~p~n"
+  "Respuesta: ~p ~s~n",[Result2,StatusCodeR3,StatusMsgR3]),
 
   [
     {"Query responde 202",
@@ -64,7 +77,16 @@ demostracion_test_()->
     {"Result OK [200]",
       ?_assertMatch({200,"OK"},{StatusCodeR2,StatusMsgR2})},
     {"ZipCode OK [200]",
-      ?_assertMatch({200,"OK"},{StatusCodeZ,StatusMsgZ})}
+      ?_assertMatch({200,"OK"},{StatusCodeZ,StatusMsgZ})},
+    {"Nueva query responde 202",
+      ?_assertMatch({202,"Accepted"},{StatusCodeQ2, StatusMsgQ2})},
+    {"Resultado idéntico al anterior",
+      ?_assertEqual(ContenidoQ,ContenidoQ2)},
+    {"Result OK [200]",
+      ?_assertMatch({200,"OK"},{StatusCodeR3,StatusMsgR3})},
+    {"Lista de zips idéntica a la anterior",
+      ?_assertEqual(ContenidoR2,ContenidoR3)}
+
   ].
 
 %% Funciones auxiliares
@@ -136,16 +158,3 @@ wait_start()->
 grep(String, Regex) ->
   {match,[{Init,Len}|_]} = re:run(String,Regex),
   string:substr(String,Init+1,Len).
-
-%% {ok,
-%%   {
-%%     {"HTTP/1.1",404,"Not Found"},
-%%     [ {"connection","close"},
-%%       {"date","Thu, 15 Jan 2015 15:56:01 GMT"},
-%%       {"server","Yaws 1.98"},
-%%       {"content-length","245"},
-%%       {"content-type","text/html"}
-%%     ],
-%%     "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\"><HTML><HEAD><TITLE>404 Not Found</TITLE></HEAD><BODY><H1>Not Found</H1>The requested URL /falsa was not found on this server.<P><HR><address> Yaws 1.98 Server at *:8888 </address>  </BODY></HTML>"
-%%   }
-%% }
