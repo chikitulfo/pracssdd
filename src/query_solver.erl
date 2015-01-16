@@ -4,22 +4,16 @@
 %% API
 -export([resuelve/3]).
 
-%%%%%%%%%%%%%
-%% TESTING %%
-%-compile(export_all).
-%%%%%%%%%%%%%
-
 -define(TABLA, zipinfo).
 
-%% API
 
 resuelve(QueryId,Field,Value) ->
   From = self(),
   spawn_link(fun() -> resolver(From,{QueryId,Field,Value}) end).
-  %spawn_link(?MODULE, resolver, [self(),{QueryId,Field,Value}]).
 
 %% Funciones privadas
 
+%% Resuelve la query y envía un mensaje al proceso que la lanzó
 resolver(From,{QueryId,Field,Value}) ->
   Resul = findzips(Field,Value),
   %Simulamos la operación costosa con 7s de espera

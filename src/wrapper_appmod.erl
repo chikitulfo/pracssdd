@@ -66,8 +66,8 @@ handle_request("result", Arg) ->
           case query_handler:get_result(QueryId) of
             {ok, []} ->
               {html, "<h1>No results found</h1>\n" };
-            {ok, ResultList} ->
-              {html, lists:foldl(
+            {ok, ResultList} ->     % Se convierte en un enlace cada elemento
+              {html, lists:foldl(   % de la lista, y se devuelve
                 fun(X,Acc) -> Acc++"<a href=/zip/"++X++">"++X++"</a><br>\n" end,
                 [], ResultList)
               };

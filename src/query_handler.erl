@@ -5,10 +5,6 @@
 %% API
 -export([start/0, stop/0, get_result/1, solve_query/2]).
 
-%%%%%%%%%%%%%
-%% TESTING %%
-%-compile(export_all).
-%%%%%%%%%%%%%
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -53,7 +49,7 @@ handle_call(salir, _From, State) ->
 handle_cast(_Request, State) ->
   {noreply, State}.
 
-%Recibido resultado de un worker
+%Recibido resultado de un worker, se introduce en la tabla
 handle_info({query_solver,solved,{QueryId,Field,Value,Resul}}, State) ->
   ets:insert(?TABLA,{QueryId,Field,Value,Resul}),
   {noreply, State};
@@ -94,6 +90,8 @@ handle_query(Field,Value) ->
       {error, badfield}
   end.
 
+% Devuelve {ok, resultado} si está calculado, {error,notready} si aún no,
+% y {error, invalidID} si no se conoce esa query}
 result(QueryId) ->
   case ets:lookup(?TABLA,QueryId) of
     [{QueryId, _Field, _Value, ResultList}] when is_list(ResultList) ->
