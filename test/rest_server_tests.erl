@@ -4,10 +4,10 @@
 
 -define(SERVER,"http://127.0.0.1:8888").
 
-%No tiene tests, sólo arranca el servidor yaws
+% No tiene tests, sólo arranca el cliente http
+% y espera para asegurarse de que yaws está iniciado.
 setup_test() ->
   inets:start(),
-  os:cmd("yaws --id test -D --conf yaws.conf"),
   wait_start().
 
 % Tests que hacen peticiones erróneas
@@ -26,9 +26,46 @@ queries_test_() ->
   {"Peticiones de query, sin comprobar resultados",
     queryreq()}.
 
-%Paramos el servidor yaws.
-stop_test() ->
-  os:cmd("yaws --id test --stop").
+demostracion_test_()->
+  ?debugFmt("~nPasamos ahora a una demostración de funcionamiento completo.~n"
+    "Se hace una petición al servicio para códigos postales cuyo nombre~n"
+    "sea Alhambra:",[]),
+  timer:sleep(200),
+  %Hacer petición, obtener su result y comprobar resultados
+  Query = "/query?field=Place%20Name&value=Alhambra",
+  {ok,{{_, StatusCodeQ, StatusMsgQ},_Headers, ContenidoQ}} = httpreq(Query),
+  ?debugFmt("~nSolicitud: ~p~n"
+      "Respuesta: ~p ~s~n~s",[Query, StatusCodeQ, StatusMsgQ, ContenidoQ]),
+
+  %Obtenemos la URL de resultado.
+  Result = grep(ContenidoQ,"(?<=<a href=)/result/[0-9]+(?=>)"),
+  ?debugFmt("~nPreguntamos por el resultado ~p",[Result]),
+  {ok,{{_,StatusCodeR,StatusMsgR},_,_}} = httpreq(Result),
+  ?debugFmt("~nSolicitud: ~p~n"
+  "Respuesta: ~p ~s~n",[Result,StatusCodeR,StatusMsgR]),
+  %Esperamos a la respuesta
+  ?debugFmt("~nEsperamos 7s a que la respuesta esté lista.~n",[]),
+  timer:sleep(7500),
+  {ok,{{_,StatusCodeR2,StatusMsgR2},_,ContenidoR2}} = httpreq(Result),
+  ?debugFmt("~nSolicitud: ~p~n"
+  "Respuesta: ~p ~s~n~s~n",[Result,StatusCodeR2,StatusMsgR2, ContenidoR2]),
+  %Obtenemos el zip
+  ZipUrl = grep(ContenidoR2,"(?<=<a href=)/zip/[0-9]+(?=>)"),
+  ?debugFmt("~nObtenemos el primer zip: ~p~n",[ZipUrl]),
+  {ok,{{_,StatusCodeZ,StatusMsgZ},_,ContenidoZ}} = httpreq(ZipUrl),
+  ?debugFmt("~nSolicitud: ~p~n"
+  "Respuesta: ~p ~s~n~s~n",[ZipUrl,StatusCodeZ,StatusMsgZ, ContenidoZ]),
+
+  [
+    {"Query responde 202",
+      ?_assertMatch({202,"Accepted"},{StatusCodeQ, StatusMsgQ})},
+    {"Result no listo [204]",
+      ?_assertMatch({204,"No Content"},{StatusCodeR,StatusMsgR})},
+    {"Result OK [200]",
+      ?_assertMatch({200,"OK"},{StatusCodeR2,StatusMsgR2})},
+    {"ZipCode OK [200]",
+      ?_assertMatch({200,"OK"},{StatusCodeZ,StatusMsgZ})}
+  ].
 
 %% Funciones auxiliares
 
@@ -70,14 +107,13 @@ queryreq() ->
       matchcode(400,"/query?field=inventado&value=daigual")},
     %Queries adecuadas
     {"Field&Value válidos [202]",
-      matchcode(202,"/query?field=State&value=charmander")},
+      matchcode(202,"/query?field=Place%20Name&value=charmander")},
     {"Value&Field válidos (orden inverso) [202]",
       matchcode(202,"/query?value=charmander&field=State")},
     %Mayúsculas y minúsculas da igual
-    {"Value&Field válidos (independiente de mayusculas) [202]",
+    {"Value&Field válidos (independiente de capitalización) [202]",
       matchcode(202,"/query?vAlUe=charmander&FIelD=State")}
     ]}.
-
 
 % Sólo queremos comprobar status code, contenido y headers irrelevantes
 matchcode(StatusCode, Ruta) ->
@@ -96,6 +132,11 @@ wait_start()->
       timer:sleep(250),
       wait_start()
   end.
+
+grep(String, Regex) ->
+  {match,[{Init,Len}|_]} = re:run(String,Regex),
+  string:substr(String,Init+1,Len).
+
 %% {ok,
 %%   {
 %%     {"HTTP/1.1",404,"Not Found"},

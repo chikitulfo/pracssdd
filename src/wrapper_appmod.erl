@@ -45,7 +45,7 @@ handle_request("query", Arg) ->
             {ok, ResponseURL} ->
               [{status, 202}, {html,
                 "<h1>Accepted Query</h1>\n"
-                "<a href=\"/result/"++integer_to_list(ResponseURL)++"\">"
+                "<a href=/result/"++integer_to_list(ResponseURL)++">"
                   "The result can be found here.</a>\n"
               }];
             {error, _Error} ->
