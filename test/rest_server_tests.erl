@@ -4,13 +4,13 @@
 
 -define(SERVER,"http://127.0.0.1:8888").
 
-% No tiene tests, sólo arranca el cliente http
+% No tiene tests, solo arranca el cliente http
 % y espera para asegurarse de que yaws está iniciado.
 setup_test() ->
   inets:start(),
   wait_start().
 
-% Tests que hacen peticiones erróneas
+% Tests que hacen peticiones erroneas
 badreq_test_() ->
   {"El servidor arranca y responde adecuadamente a peticiones donde no hay"
     " recursos",
@@ -18,7 +18,7 @@ badreq_test_() ->
 
 % Tests al subsistema /zip/
 zip_test_() ->
-  {"Responde a peticiones de zip, tanto adecuadas como erróneas",
+  {"Responde a peticiones de zip, tanto adecuadas como erroneas",
     zipreq()}.
 
 % Tests al subsistema /query/
@@ -28,11 +28,11 @@ queries_test_() ->
 
 % Test que muestra el sistema en funcionamiento
 demostracion_test_()->
-  ?debugFmt("~nPasamos ahora a una demostración de funcionamiento completo.~n"
-    "Se hace una petición al servicio para códigos postales cuyo nombre~n"
+  ?debugFmt("~nPasamos ahora a una demostracion de funcionamiento completo.~n"
+    "Se hace una peticion al servicio para codigos postales cuyo nombre~n"
     "sea Alhambra:",[]),
   timer:sleep(200),
-  %Hacer petición, obtener su result y comprobar resultados
+  %Hacer peticion, obtener su result y comprobar resultados
   Query = "/query?field=Place%20Name&value=Alhambra",
   {ok,{{_, StatusCodeQ, StatusMsgQ},_Headers, ContenidoQ}} = httpreq(Query),
   ?debugFmt("~nSolicitud: ~p~n"
@@ -45,7 +45,7 @@ demostracion_test_()->
   ?debugFmt("~nSolicitud: ~p~n"
   "Respuesta: ~p ~s~n",[Result,StatusCodeR,StatusMsgR]),
   %Esperamos a la respuesta
-  ?debugFmt("~nEsperamos 7s a que la respuesta esté lista.~n",[]),
+  ?debugFmt("~nEsperamos 7s a que la respuesta este lista.~n",[]),
   timer:sleep(7500),
   {ok,{{_,StatusCodeR2,StatusMsgR2},_,ContenidoR2}} = httpreq(Result),
   ?debugFmt("~nSolicitud: ~p~n"
@@ -57,9 +57,9 @@ demostracion_test_()->
   ?debugFmt("~nSolicitud: ~p~n"
   "Respuesta: ~p ~s~n~s~n",[ZipUrl,StatusCodeZ,StatusMsgZ, ContenidoZ]),
   timer:sleep(200),
-  %Comprobamos ahora que una petición idéntica no necesita trabajar de nuevo
+  %Comprobamos ahora que una peticion identica no necesita trabajar de nuevo
   ?debugFmt("~nRepetimos la query inicial, para comprobar que~n"
-    "esta vez el resultado está disponible de inmediato:~n"
+    "esta vez el resultado esta disponible de inmediato:~n"
     "~p~n",[Query]),
   {ok,{{_, StatusCodeQ2, StatusMsgQ2},_, ContenidoQ2}} = httpreq(Query),
   Result2 = grep(ContenidoQ2,"(?<=<a href=)/result/[0-9]+(?=>)"),
@@ -80,7 +80,7 @@ demostracion_test_()->
       ?_assertMatch({200,"OK"},{StatusCodeZ,StatusMsgZ})},
     {"Nueva query responde 202",
       ?_assertMatch({202,"Accepted"},{StatusCodeQ2, StatusMsgQ2})},
-    {"Resultado idéntico al anterior",
+    {"Resultado identico al anterior",
       ?_assertEqual(ContenidoQ,ContenidoQ2)},
     {"Result OK [200]",
       ?_assertMatch({200,"OK"},{StatusCodeR3,StatusMsgR3})},
@@ -95,7 +95,7 @@ badreq() ->
   {inparallel,[
     %Ruta fuera de appmod
     {"/rutainexistente [404]", matchcode(404,"/rutainexistente")},
-    %Rutas de appmod sin más
+    %Rutas de appmod sin mas
     {"/zip [404]",matchcode(404,"/zip")},
     {"/query [404]",matchcode(404,"/query")},
     {"/result [418]",matchcode(418,"/result")}
@@ -125,19 +125,19 @@ queryreq() ->
       matchcode(400,"/query?hola=lala&adios=charmander")},
     {"Field y value inexistente [400]",
       matchcode(400,"/query?field=&value=")},
-    {"Field no válido [400]",
+    {"Field no valido [400]",
       matchcode(400,"/query?field=inventado&value=daigual")},
     %Queries adecuadas
-    {"Field&Value válidos [202]",
+    {"Field&Value validos [202]",
       matchcode(202,"/query?field=Place%20Name&value=charmander")},
-    {"Value&Field válidos (orden inverso) [202]",
+    {"Value&Field validos (orden inverso) [202]",
       matchcode(202,"/query?value=charmander&field=State")},
-    %Mayúsculas y minúsculas da igual
-    {"Value&Field válidos (independiente de capitalización) [202]",
+    %Mayusculas y minusculas da igual
+    {"Value&Field validos (independiente de capitalizacion) [202]",
       matchcode(202,"/query?vAlUe=charmander&FIelD=State")}
     ]}.
 
-% Sólo queremos comprobar status code, contenido y headers irrelevantes
+% Solo queremos comprobar status code, contenido y headers irrelevantes
 matchcode(StatusCode, Ruta) ->
   ?_assertMatch({ok,{{_,StatusCode,_},_,_}},
     httpreq(Ruta)).
@@ -145,7 +145,7 @@ matchcode(StatusCode, Ruta) ->
 httpreq(Path) ->
   httpc:request(get, {?SERVER++Path, []}, [], []).
 
-% Esperar antes de continuar el test a que yaws esté listo
+% Esperar antes de continuar el test a que yaws este listo
 wait_start()->
   case httpreq("/") of
     {ok,{{"HTTP/1.1",_,_},_,_}} ->
