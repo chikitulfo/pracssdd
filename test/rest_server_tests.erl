@@ -4,31 +4,45 @@
 
 -define(SERVER,"http://127.0.0.1:8888").
 
+%No tiene tests, sólo arranca el servidor yaws
+setup_test() ->
+  inets:start(),
+  os:cmd("yaws --id test -D --conf yaws.conf"),
+  wait_start().
+
 % Tests que hacen peticiones erróneas
 badreq_test_() ->
   {"El servidor arranca y responde adecuadamente a peticiones donde no hay"
     " recursos",
-    {setup, fun start/0, fun stop/1, fun badreq/1}}.
+    badreq()}.
 
+% Tests al subsistema /zip/
 zip_test_() ->
   {"Responde a peticiones de zip, tanto adecuadas como erróneas",
-    {setup, fun start/0, fun stop/1, fun zipreq/1}}.
+    zipreq()}.
 
+% Tests al subsistema /query/
 queries_test_() ->
   {"Peticiones de query, sin comprobar resultados",
-    {setup, fun start/0, fun stop/1, fun queryreq/1}}.
+    queryreq()}.
 
-badreq(_) ->
+%Paramos el servidor yaws.
+stop_test() ->
+  os:cmd("yaws --id test --stop").
+
+%% Funciones auxiliares
+
+badreq() ->
   {inparallel,[
     %Ruta fuera de appmod
-    {"/rutainexistente", matchcode(404,"/rutainexistente")},
+    {"/rutainexistente [404]", matchcode(404,"/rutainexistente")},
     %Rutas de appmod sin más
-    {"/zip",matchcode(404,"/zip")},
-    {"/query",matchcode(404,"/query")},
-    {"/result",matchcode(418,"/result")}
+    {"/zip [404]",matchcode(404,"/zip")},
+    {"/query [404]",matchcode(404,"/query")},
+    {"/result [418]",matchcode(418,"/result")}
   ]}.
 
-zipreq(_) ->
+zipreq() ->
   {inparallel,[
     %Zip correcto,
     {"46176 (devuelve csv)", fun() -> ?_assertMatch({ok,{{_,200,_},
@@ -38,35 +52,32 @@ zipreq(_) ->
         {"content-type","text/csv"}],_Contenido}},
       httpreq("/zip/46176")) end},
     %Rutas de error
-    {"00288 (404)",matchcode(404,"/zip/00288")},
-    {"hola (404)",matchcode(404,"/zip/hola")},
-    {"46176/23 (404)",matchcode(404,"/zip/46176/23")}
+    {"00288 [404]",matchcode(404,"/zip/00288")},
+    {"hola [404]",matchcode(404,"/zip/hola")},
+    {"46176/23 [404]",matchcode(404,"/zip/46176/23")}
   ]}.
 
-queryreq(_) ->
+queryreq() ->
   {inparallel,[
     %Queries mal formadas
-    {"Caracteres raros", matchcode(400,"/query?ads+as-/()&$S%ef")},
-    {"No field ni value", matchcode(400,"/query?hola=lala&adios=charmander")},
-    {"Field y value inexistente", matchcode(400,"/query?field=&value=")},
-    {"Field no válido", matchcode(400,"/query?field=inventado&value=daigual")},
+    {"Caracteres raros [400]",
+      matchcode(400,"/query?ads+as-/()&$S%ef")},
+    {"No field ni value [400]",
+      matchcode(400,"/query?hola=lala&adios=charmander")},
+    {"Field y value inexistente [400]",
+      matchcode(400,"/query?field=&value=")},
+    {"Field no válido [400]",
+      matchcode(400,"/query?field=inventado&value=daigual")},
     %Queries adecuadas
-    {"Field&Value válidos", matchcode(202,"/query?field=State&value=charmander")},
-    {"Value&Field válidos (orden inverso)", matchcode(202,"/query?value=charmander&field=State")},
+    {"Field&Value válidos [202]",
+      matchcode(202,"/query?field=State&value=charmander")},
+    {"Value&Field válidos (orden inverso) [202]",
+      matchcode(202,"/query?value=charmander&field=State")},
     %Mayúsculas y minúsculas da igual
-    {"Value&Field válidos (independiente de mayusculas)", matchcode(202,"/query?vAlUe=charmander&FIelD=State")}
+    {"Value&Field válidos (independiente de mayusculas) [202]",
+      matchcode(202,"/query?vAlUe=charmander&FIelD=State")}
     ]}.
 
-%necesario arrancar yaws y el servicio de peticiones
-start() ->
-  inets:start(),
-  os:cmd("yaws --id test -D --conf yaws.conf"),
-  wait_start().
-
-%paramos yaws e inets tras los tests
-stop(_SetupData) ->
-  os:cmd("yaws --id test --stop").
-  %inets:stop().
 
 % Sólo queremos comprobar status code, contenido y headers irrelevantes
 matchcode(StatusCode, Ruta) ->
