@@ -1,5 +1,7 @@
 # Prácticas de REST y Erlang 
 
+Proyecto de prácticas para la asignatura de Sistemas Distribuidos de la Facultad de Informática en la Universidad de Murcia. Servicio REST desarrollado en erlang mediante las directrices del framework OTP.
+
 ## Sistemas Distribuidos
 
 Profesor:  Diego Sevilla Ruiz 
